@@ -10,7 +10,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd textures\baldo_des3.jpg
+map_Kd textures\patch10_beatup2.jpg
 
 newmtl Material_NONE
 Ns 96.078431
@@ -23,7 +23,7 @@ d 1.000000
 illum 2
 map_Kd textures\\platform.jpg
 
-newmtl Material_patch10_beatup2.jpg
+newmtl Material_baldo_des3.jpg
 Ns 96.078431
 Ka 1.000000 1.000000 1.000000
 Kd 0.640000 0.640000 0.640000
@@ -32,7 +32,7 @@ Ke 0.000000 0.000000 0.000000
 Ni 1.000000
 d 1.000000
 illum 2
-map_Kd textures\patch10_beatup2.jpg
+map_Kd textures\baldo_des3.jpg
 
 newmtl Material_platform.jpg
 Ns 96.078431
