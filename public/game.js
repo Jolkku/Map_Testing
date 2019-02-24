@@ -1,4 +1,4 @@
-var prevTime, gravity = 4, disconnected = false, jumpHeight = 60, jumpDelay = 500, sensitivity, velocity, models, blocker, instructions, crosshair, values, leaderBoard, element, me, camera, scene, matrix4, renderer, light, ambient, sortArray, socket, id1, controls, point, position, angle, direction, raycaster, quaternion, intersected = false, showGun = true, rtime = 3000, RESOURCES_LOADED = false, startGame = false, cheats = false, textChanged = false, meshes = {}, players = [], lasers = [], intersectedPlayer = '', controlsEnabled = false, moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false, reload = false, onSurface = true, canJump = true, flag = false;
+var prevTime, gravity = 3, disconnected = false, jumpHeight = 60, jumpDelay = 100, sensitivity, velocity, models, blocker, instructions, crosshair, values, leaderBoard, element, me, camera, scene, matrix4, renderer, light, ambient, sortArray, socket, id1, controls, point, position, angle, direction, raycaster, quaternion, intersected = false, showGun = false, rtime = 3000, RESOURCES_LOADED = false, startGame = false, cheats = true, textChanged = false, meshes = {}, players = [], lasers = [], intersectedPlayer = '', controlsEnabled = false, moveForward = false, moveBackward = false, moveLeft = false, moveRight = false, moveUp = false, moveDown = false, reload = false, onSurface = true, canJump = true, flag = false, jump = false;
 init();
 animate();
 function init() {
@@ -11,6 +11,7 @@ function init() {
     ammo: 2,
     visible: false,
     dead: false,
+    health: 100
   };
   blocker = document.getElementById('blocker');
   instructions = document.getElementById('instructions');
@@ -22,8 +23,8 @@ function init() {
 
   models = {
     map: {
-      obj: "Objects/map.obj",
-      mtl: "Objects/map.mtl",
+      obj: "Objects/mapInProgress.obj",
+      mtl: "Objects/mapInProgress.mtl",
       mesh: null
     },
     player: {
@@ -113,15 +114,8 @@ function init() {
 			case 82: //r
 				reload = true;
 				break;
-      case 32: // space
-				if (onSurface && controlsEnabled && RESOURCES_LOADED && canJump) {
-          velocity.y += jumpHeight;
-          onSurface = false;
-          canJump = false;
-          setTimeout(function () {
-            canJump = true;
-          }, 200);
-        };
+                        case 32: // space
+				jump = true;
 				break;
 		};
 	};
@@ -148,6 +142,9 @@ function init() {
 			case 82: //r
 				reload = false;
 				break;
+			case 32: // space
+				jump = false;
+				break;
 		};
 	};
 	document.addEventListener( 'keydown', keyDown, false );
@@ -166,7 +163,9 @@ function init() {
         ammoUI.style.visibility = 'visible';
         leaderBoard.style.visibility = 'visible';
         me.visible = true;
-        meshes["laser"].visible = true;
+        if (showGun) {
+          meshes["laser"].visible = true;
+        }
         let data = {
           from: me.socketId,
           visible: true,
@@ -237,10 +236,10 @@ function init() {
 
 	light = new THREE.DirectionalLight( 0xffffff, 0.5 );
   light.position.set(0, 50, 0);
-  light.castShadow = true;
+  //light.castShadow = true;
   scene.add( light );
 
-  ambient = new THREE.AmbientLight( 0xffffff, 0.5 );
+  ambient = new THREE.AmbientLight( 0xffffff, 1);
   scene.add( ambient );
 };
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,7 +254,7 @@ function animate() {
   };
 	if (RESOURCES_LOADED) {
     document.getElementById("ammoValue").innerHTML = me.ammo;
-    document.getElementById("onSurface").innerHTML = onSurface;
+    //document.getElementById("onSurface").innerHTML = onSurface;
     controls.getDirection( direction );
 	  var time = performance.now();
 	  var delta = ( time - prevTime) / 1000;
@@ -284,13 +283,14 @@ function animate() {
       controls.getObject().position.y = 5.76;
       onSurface = true;
     }
-    checkCheats();
+    //checkCheats();
     if (showGun) {
       setGun("laser");
     };
     sendMypos();
     updatePlayers();
     updateLaser();
+    jumping();
 	  prevTime = time;
 	};
 	renderer.render( scene, camera );
@@ -298,15 +298,19 @@ function animate() {
 
 function onResourcesLoaded(){
   meshes["map"] = models["map"].mesh.clone();
-	meshes["map"].position.set(0, 10, 11);
-  meshes["map"].children[1].material = new THREE.MeshBasicMaterial({color: 0x87ceff});
+	meshes["map"].position.set(0, 0, 0);
+  //meshes["map"].children[1].material = new THREE.MeshBasicMaterial({color: 0x87ceff});
 	scene.add(meshes["map"]);
   meshes["laser"] = models["laser"].mesh.clone();
   meshes["laser"].scale.set(0.05, 0.05, 0.05);
+  if (!showGun) {
+    meshes["laser"].visible = false
+  }
   scene.add(meshes["laser"]);
 };
 
-function Player(socketId, uuid, x, y, z, name, angle, score, visible, dead) {
+function Player(socketId, uuid, x, y, z, name, angle, score, visible, dead, health) {
+this.health = health;
   this.dead = dead;
   this.score = score;
   this.angle = angle;
@@ -324,6 +328,9 @@ function Player(socketId, uuid, x, y, z, name, angle, score, visible, dead) {
   this.update = function() {
     this.mesh.position.set(this.x, this.y - 5.6, this.z);
     this.mesh.rotation.y = this.angle + Math.PI;
+    /*if (this.health <= 0) {
+      this.dead = true;
+    }*/
   };
 };
 
@@ -476,7 +483,7 @@ function moving(delta) {
       };
 
       if (collide == false) {
-        velocity.z -= 400.0 * delta;
+        velocity.z -= 200.0 * delta;
       };
     };
 
@@ -509,7 +516,7 @@ function moving(delta) {
       };
 
       if (collide == false) {
-        velocity.z += 400.0 * delta;
+        velocity.z += 200.0 * delta;
       };
     };
 
@@ -542,7 +549,7 @@ function moving(delta) {
       };
 
       if (collide == false) {
-        velocity.x -= 400.0 * delta;
+        velocity.x -= 200.0 * delta;
       };
     };
 
@@ -575,14 +582,14 @@ function moving(delta) {
       };
 
       if (collide == false) {
-        velocity.x += 400.0 * delta;
+        velocity.x += 200.0 * delta;
       };
     };
     if ( moveUp && cheats && position.y < 52) {
-      controls.getObject().position.y += 1;
+      controls.getObject().position.y += 0.3;
     }
     if ( moveDown && cheats && position.y > -38) {
-      controls.getObject().position.y -= 1;
+      controls.getObject().position.y -= 0.3;
     };
   };
 };
@@ -653,7 +660,7 @@ function createPlayer(data) {;
   };
   if (!checkIfExists) {
     console.log("created Player");
-    players.push(new Player(data.socketId, data.uuid, data.x, data.y, data.z, data.name, data.angle, data.score, data.visible, data.dead));
+    players.push(new Player(data.socketId, data.uuid, data.x, data.y, data.z, data.name, data.angle, data.score, data.visible, data.dead, data.health));
     setArray();
   };
 };
@@ -680,7 +687,8 @@ function sendHost() {
     angle: controls.getObject().rotation.y,
     score: me.score,
     visible: me.visible,
-    dead: me.dead
+    dead: me.dead,
+    health: me.health
   };
   socket.emit('sentHost', data);
 };
@@ -693,6 +701,7 @@ function updateOtherPlayers(data) {
       players[i].z = data.z;
       players[i].angle = data.angle;
       players[i].mesh.visible = data.visibility;
+      players[i].health = data.health;
     };
   };
 };
@@ -736,7 +745,8 @@ function sendMypos() {
     z: controls.getObject().position.z,
     angle: controls.getObject().rotation.y,
     socketId: me.socketId,
-    visibility: me.visible
+    visibility: me.visible,
+    health: me.health,
   };
   socket.emit('updateHost', data);
 };
@@ -851,9 +861,9 @@ function checkGroundCollision() {
   var intersects, dir = new THREE.Vector3(0, -1, 0);
   raycaster.set(position, dir);
   intersects = raycaster.intersectObject( meshes["map"], true );
-  if (intersects.length > 0 && intersects[0].distance < 7 && cheats == false) {
+  if (intersects.length > 0 && intersects[0].distance < 7 && !cheats) {
     velocity.y = Math.max( 0, velocity.y);
-    if (position.y < (0.899 + 5.76 + intersects[0].point.y)) {
+    if (velocity.y < 1 && position.y < (0.899 + 5.76 + intersects[0].point.y)) {
       velocity.y = 0;
       controls.getObject().position.y = 0.899 + 5.76 + intersects[0].point.y;
       onSurface = true;
@@ -976,26 +986,26 @@ function checkCheats() {
       flag = true
       let data = {
         from: me.socketId
-      }
+      };
       socket.emit('checkCheats', data);
-    }
+    };
     if (cheats) {
       flag = true
       let data = {
         from: me.socketId
-      }
+      };
       socket.emit('checkCheats', data);
-    }
-  }
-}
+    };
+  };
+};
 
 function unlockCheats(password) {
   let data = {
     from: me.socketId,
     password: password
-  }
+  };
   socket.emit('unlockCheats', data);
-}
+};
 
 function answer(data) {
   if (data.authority == false) {
@@ -1006,8 +1016,8 @@ function answer(data) {
     blocker.style.background = "rgba(0,0,0,0.8)";
     me.visible = false;
     document.exitPointerLock();
-  }
-}
+  };
+;}
 
 function disconnectHost() {
   disconnected = true;
@@ -1017,4 +1027,17 @@ function disconnectHost() {
   blocker.style.background = "rgba(0,0,0,0.8)";
   me.visible = false;
   document.exitPointerLock();
-}
+};
+
+function jumping() {
+  if (jump) {
+    if (onSurface && controlsEnabled && canJump) {
+      velocity.y += jumpHeight;
+      onSurface = false;
+      canJump = false;
+      setTimeout(function () {
+        canJump = true;
+      }, jumpDelay);
+    };
+  };
+};
