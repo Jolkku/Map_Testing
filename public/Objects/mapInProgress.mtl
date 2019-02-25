@@ -1,5 +1,5 @@
 # Blender MTL File: 'mapInProgressDeletedWalls.blend'
-# Material Count: 5
+# Material Count: 6
 
 newmtl Material
 Ns 96.078431
@@ -44,6 +44,17 @@ Ni 1.000000
 d 1.000000
 illum 2
 map_Kd textures\platform.jpg
+
+newmtl Material_side_des.jpg
+Ns 96.078431
+Ka 1.000000 1.000000 1.000000
+Kd 0.640000 0.640000 0.640000
+Ks 0.000000 0.000000 0.000000
+Ke 0.000000 0.000000 0.000000
+Ni 1.000000
+d 1.000000
+illum 2
+map_Kd textures\side_des.jpg
 
 newmtl None
 Ns 0
